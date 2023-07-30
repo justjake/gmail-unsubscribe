@@ -1,0 +1,10 @@
+{
+  "name": "gmail-unsubscribe",
+  "version": "1.0.0",
+  "description": "Unsubscribe from spam in your Gmail inbox for free without compromising privacy",
+  "main": "index.js",
+  "repository": "https://github.com/justjake/gmail-unsubscribe",
+  "author": "Jake Teton-Landis <just.1.jake@gmail.com>",
+  "license": "MIT",
+  "private": false
+}
