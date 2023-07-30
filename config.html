@@ -1,0 +1,58 @@
+<link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons.css">
+
+<script>
+  
+  function closeWindow() {
+    google.script.host.close();
+  }
+  
+  function showError(error) {
+    document.getElementById("error").innerHTML = error;
+  }
+  
+  function showConfig(params) {
+        
+    if (params.label !== "") 
+    document.getElementById("label").value = params.label;
+    
+    return;
+    
+  }
+
+  function validate() {
+      
+      var label = document.getElementById("label").value;
+      
+      if (label.trim() === "") {
+          showError("Please enter a Gmail label name..");
+          return;
+      } else {
+          showError("Saving configuration, please wait..");
+          var params = {
+              label: label
+          };
+          google.script.run.withSuccessHandler(showError).saveConfig(params);
+      }
+  }
+
+</script>
+
+<form>
+    <div class="form-group block">
+        <p style="margin-bottom:4px;">Enter Gmail Label Name:</p>
+        <input type="text" id="label" name="label" placeholder="Your email address.." style="width: 250px;" />
+    </div>
+
+
+    <p>
+        <input class="blue" type="button" value="Save configuration" onclick="validate()" />
+        <input class="green" type="button" value="Close window" onclick="google.script.host.close()" />
+    </p>
+    
+    <p class="error" id="error"></p>
+
+</form>
+
+<script>
+  google.script.run.withSuccessHandler(showConfig).getConfig();  
+</script>
