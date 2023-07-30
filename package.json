@@ -6,5 +6,9 @@
   "repository": "https://github.com/justjake/gmail-unsubscribe",
   "author": "Jake Teton-Landis <just.1.jake@gmail.com>",
   "license": "MIT",
-  "private": false
+  "private": false,
+  "devDependencies": {
+    "@google/clasp": "^2.4.2",
+    "@types/google-apps-script": "^1.0.65"
+  }
 }
