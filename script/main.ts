@@ -5,8 +5,6 @@
  * Forked from Amit Agarwal (@labnol): https://www.labnol.org/internet/gmail-unsubscribe/28806/
  */
 
-import "url-polyfill";
-
 /**
  * @OnlyCurrentDoc
  */
@@ -32,6 +30,7 @@ function logToSpreadsheet(args: {
   from: string;
   unsubscribeLinkOrEmail: string;
 }) {
+  console.log("logToSpreadsheet:", args);
   var ss = SpreadsheetApp.getActive();
   ss.getActiveSheet().appendRow([
     args.status,
@@ -83,9 +82,13 @@ function unsubscribeThread(args: {
     const raw = message.getRawContent();
     const rawMatch = raw.match(/^list\-unsubscribe:(.|\r\n\s)+<([^>]+)>/im);
     if (rawMatch) {
-      const url = new URL(rawMatch[2]);
+      const url = rawMatch[2];
+      const protocol = url.match(/^([^:]+):/i)?.[1];
+      const pathname = url.match(/^.+:([^?&#]+)/)?.[1];
+      const subject = url.match(/[?&]subject=([^&]+)/i)?.[1] ?? "unsubscribe";
+      const body = url.match(/[?&]body=([^&]+)/i)?.[1] ?? "unsubscribe";
 
-      if (url.protocol.startsWith("http")) {
+      if (protocol?.startsWith("http")) {
         status = {
           summary: `Unsubscribed via header`,
           location: `POST to ${url}`,
@@ -95,10 +98,8 @@ function unsubscribeThread(args: {
         });
       }
 
-      if (url.protocol === "mailto") {
-        const email = url.pathname;
-        const subject = url.searchParams.get("subject") || "Unsubscribe";
-        const body = url.searchParams.get("body") || "Unsubscribe";
+      if (protocol === "mailto" && pathname) {
+        const email = pathname;
 
         status = {
           summary: `Unsubscribed via email`,
