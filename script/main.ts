@@ -3,6 +3,15 @@
  *
  * By Jake Teton-Landis (@jitl)
  * Forked from Amit Agarwal (@labnol): https://www.labnol.org/internet/gmail-unsubscribe/28806/
+ *
+ * The important functions in this file are:
+ *
+ * - unsubscribeFromLabeledThreads: this is where we actually do the work
+ *   of looking at emails and trying to unsubscribe from them.
+ *
+ * - onOpen: this function is called automatically when you open the Sheet.
+ *   It just adds the menu to your sheet's UI.
+ *   It's restricted from accessing your data by Google Apps Script itself.
  */
 
 /**
@@ -567,7 +576,7 @@ function showConfigView() {
 const CRON_MINUTES = 15;
 
 function isRunning() {
-  if (isOnOpen) {
+  if (reducedPermissions) {
     // Can't access triggers during onOpen.
     return Config.instance.runInBackground;
   }
@@ -616,20 +625,25 @@ function stopAllTriggers(silent: boolean) {
 // Event Handlers
 // ============================================================================
 
-let isOnOpen = false;
+let reducedPermissions = false;
 /**
  * This function runs automatically when you open the connected spreadsheet.
  * More info: https://developers.google.com/apps-script/guides/triggers#onopene
  */
 function onOpen() {
   try {
-    isOnOpen = true;
+    reducedPermissions = true;
     showMenu();
   } finally {
-    isOnOpen = false;
+    reducedPermissions = false;
   }
 }
 
 function onInstall() {
-  showMenu();
+  try {
+    reducedPermissions = true;
+    showMenu();
+  } finally {
+    reducedPermissions = false;
+  }
 }
