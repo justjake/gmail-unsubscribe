@@ -13,48 +13,11 @@
 // Gmail Unsubscriber
 // ============================================================================
 
-function trimDetail(detail: string) {
-  if (detail.length > 40) {
-    return String(detail).slice(0, 40) + "…";
-  } else {
-    return detail;
-  }
-}
-
-function getOrCreateLabel(name: string) {
-  var label = GmailApp.getUserLabelByName(name);
-
-  if (!label) {
-    label = GmailApp.createLabel(name);
-  }
-
-  return label;
-}
-
-function createAllLabels() {
-  getOrCreateLabel(Config.instance.unsubscribeLabel);
-  getOrCreateLabel(Config.instance.successLabel);
-  getOrCreateLabel(Config.instance.failLabel);
-}
-
-function logToSpreadsheet(args: {
-  status: string;
-  subject: string;
-  view: string;
-  from: string;
-  unsubscribeLinkOrEmail: string;
-}) {
-  console.log("logToSpreadsheet:", args);
-  var ss = SpreadsheetApp.getActive();
-  ss.getActiveSheet().appendRow([
-    args.status,
-    args.subject,
-    args.view,
-    args.from,
-    args.unsubscribeLinkOrEmail,
-  ]);
-}
-
+/**
+ * @main
+ * This is the function called from "Run Now", as well as called regularly if
+ * you "start running periodically".
+ */
 function unsubscribeFromLabeledThreads() {
   var todoLabel = getOrCreateLabel(Config.instance.unsubscribeLabel);
   var successLabel = getOrCreateLabel(Config.instance.successLabel);
@@ -79,12 +42,20 @@ function unsubscribeFromLabeledThreads() {
   }
 }
 
+/**
+ * We parse these types of actions out of emails.
+ * See the `switch` statement in `unsubscribeThread` for more details.
+ */
 type UnsubscribeAction =
   | { type: "http"; url: string; postBody?: string }
   | { type: "mailto"; email: string; subject?: string; emailBody?: string }
   | { type: "tryOpenLink"; url: string }
   | { type: "unknown"; url: string };
 
+/**
+ * We call this function on each thread tagged "Unsubscribe" (or whatever the
+ * todo label is).
+ */
 function unsubscribeThread(args: {
   thread: GoogleAppsScript.Gmail.GmailThread;
   todoLabel: GoogleAppsScript.Gmail.GmailLabel;
@@ -104,13 +75,26 @@ function unsubscribeThread(args: {
   let message: GoogleAppsScript.Gmail.GmailMessage | undefined = undefined;
 
   try {
+    /**
+     * Parse the actions from the first message in the thread.
+     */
     message = thread.getMessages()[0];
     const actions = getUnsubscribeActions(message);
     console.log("Parsed thread", { thread: thread.getPermalink(), actions });
 
+    /**
+     * The first action is the best action (most likely to work).
+     */
     const bestAction = actions.at(0);
     if (bestAction) {
+      /**
+       * Perform the action based on its `type`.
+       */
       switch (bestAction.type) {
+        /**
+         * list-unsubscribe with an HTTP link: send POST to that URL as
+         * appropriate. The request is sent from a Google-owned IP address.
+         */
         case "http": {
           status = {
             summary: "Success via header",
@@ -128,6 +112,10 @@ function unsubscribeThread(args: {
           break;
         }
 
+        /**
+         * list-unsubscribe with a mailto link: send email to that address as
+         * appropriate. The email is sent from your Gmail address.
+         */
         case "mailto": {
           const parts = [bestAction.email];
           if (bestAction.subject) {
@@ -149,6 +137,14 @@ function unsubscribeThread(args: {
           break;
         }
 
+        /**
+         * <a href="url"> in the message body: send HTTP GET to that URL, in
+         * hopes that that will unsubscribe us. The request is sent from a
+         * Google IP address.
+         *
+         * We always mark this action as "fail" since we're uncertain if it
+         * helps.
+         */
         case "tryOpenLink": {
           status = {
             summary: "Maybe by opening link",
@@ -160,6 +156,9 @@ function unsubscribeThread(args: {
           break;
         }
 
+        /**
+         * We don't know how to handle this URL in the `list-unsubscribe` header.
+         */
         case "unknown": {
           status = {
             summary: "Failed: don't know how",
@@ -169,6 +168,9 @@ function unsubscribeThread(args: {
           break;
         }
 
+        /**
+         * This should never happen.
+         */
         default:
           throw new Error(
             `Parsed unknown action: ${JSON.stringify(bestAction)})`
@@ -182,6 +184,9 @@ function unsubscribeThread(args: {
       };
     }
 
+    /**
+     * Switch the label on the thread based on the status of the action.
+     */
     thread.removeLabel(todoLabel);
     if (!status || status.label === "fail") {
       thread.addLabel(failLabel);
@@ -189,6 +194,9 @@ function unsubscribeThread(args: {
       thread.addLabel(successLabel);
     }
 
+    /**
+     * Log to the spreadsheet.
+     */
     logToSpreadsheet({
       from: message.getFrom(),
       subject: message.getSubject(),
@@ -197,6 +205,9 @@ function unsubscribeThread(args: {
       status: status?.summary || "Could not unsubscribe",
     });
   } catch (error) {
+    /**
+     * On unexpected error, apply the "fail" label.
+     */
     thread.addLabel(failLabel);
     thread.removeLabel(todoLabel);
 
@@ -209,6 +220,9 @@ function unsubscribeThread(args: {
       ? `in ${status.location}:\n${errorInfo}`
       : errorInfo;
 
+    /**
+     * Also log details of the error to the spreadsheet.
+     */
     logToSpreadsheet({
       from: message?.getFrom() ?? "<error>",
       subject: message?.getSubject() ?? "<error>",
@@ -221,20 +235,54 @@ function unsubscribeThread(args: {
   }
 }
 
+/**
+ * Parses a single Gmail message for the actions we could take to unsubscribe from it.
+ * These actions are returned in order of preference.
+ */
 function getUnsubscribeActions(
   message: GoogleAppsScript.Gmail.GmailMessage
 ): UnsubscribeAction[] {
   const raw = message.getRawContent();
+  /**
+   * The best ways to unsubscribe are to follow the `list-unsubscribe` header
+   * that the mailer adds to the email. This contains clear, machine-readable
+   * instructions for how to unsubscribe.
+   *
+   * The header line may contain multiple unsubscribe actions, it looks like this:
+   * ```
+   * list-unsubscribe: <https://example.com/unsubscribe>, <mailto:unsubscribe@example.com?subject=XXXX>
+   * ```
+   * This regex grabs the contents of the header.
+   */
   const listUnsubscribeHeader = raw.match(
     /^list-unsubscribe:(?:[\r\n\s])+([^\n\r]+)$/im
   )?.[1];
+  /**
+   * If the unsubscribe action is a http/https URL, the mailer may include a
+   * `list-unsubscribe-post` header, which specifies the body of the POST request
+   * to send to the URL.
+   */
   const listUnsubscribePostHeader = raw.match(
     /^list-unsubscribe-post:(?:[\r\n\s])+([^\n\r]+)$/im
   )?.[1];
+  /**
+   * Split the list-unsubscribe header contents into individual action URLs.
+   *
+   * input:
+   * ```
+   * "<https://example.com/unsubscribe>, <mailto:unsubscribe@example.com?subject=XXXX>"
+   * ```
+   * output:
+   * ["https://example.com/unsubscribe", "mailto:unsubscribe@example.com?subject=XXXX"]
+   */
   const listUnsubscribeOptionsMatches = listUnsubscribeHeader
     ? Array.from(listUnsubscribeHeader.matchAll(/<([^>]+)>/gi))
     : [];
 
+  /**
+   * Loop over the action URLs we found and parse out the details of each action.
+   * We end up with an unsorted list of actions.
+   */
   const actions: UnsubscribeAction[] = listUnsubscribeOptionsMatches.map(
     (match) => {
       const url = match[1];
@@ -267,6 +315,20 @@ function getUnsubscribeActions(
     }
   );
 
+  /**
+   * This block of code attempts to find a clickable link in the HTML version of
+   * the email, which is the version you usually see when you view an email in
+   * Gmail.
+   *
+   * Any such link we find may unsubscribe you as soon as you visit, but it
+   * could require you to fill out a form or click buttons to unsubscribe.
+   *
+   * We can "visit" these links by sending an HTTP GET request to them, in case
+   * that's enough to automatically unsubscribe, but we can't be sure that's
+   * effective.
+   *
+   * This is the lowest priority action.
+   */
   const parseHrefRegex =
     /<a[^>]*href=["'](https?:\/\/[^"']+)["'][^>]*>(.*?)<\/a>/gi;
   const htmlBody = message.getBody().replace(/\s/g, "");
@@ -287,10 +349,25 @@ function getUnsubscribeActions(
   return actions.sort((a, b) => getActionPriority(b) - getActionPriority(a));
 }
 
+/**
+ * Rank the actions we find on an email. We'll perform the top ranked action found.
+ *
+ * "http" and "mailto" actions are parsed from the list-unsubscribe email header,
+ * so the email sender is instructing us how to unsubscribe. These *should* work well.
+ *
+ * "tryOpenLink" just opens (HTTP GET) a "Unsubscribe" link probably meant for humans
+ * in the HTML body, so it's the worst action.
+ *
+ * We also have an "unknown" action that just logs information. That and any new
+ * actions we defined are ranked lowest.
+ */
 function getActionPriority(action: UnsubscribeAction): number {
   switch (action.type) {
+    // This action is specified by the email sender as a way to
+    // We rank HTTP post action highest, because it's the most efficient overall.
     case "http":
       return 3;
+    // Sending an unsubscribe email
     case "mailto":
       return 2;
     case "tryOpenLink":
@@ -298,6 +375,55 @@ function getActionPriority(action: UnsubscribeAction): number {
     default:
       return 0;
   }
+}
+
+/**
+ * Save the status of a thread to our spreadsheet.
+ */
+function logToSpreadsheet(args: {
+  status: string;
+  subject: string;
+  view: string;
+  from: string;
+  unsubscribeLinkOrEmail: string;
+}) {
+  console.log("logToSpreadsheet:", args);
+  var ss = SpreadsheetApp.getActive();
+  ss.getActiveSheet().appendRow([
+    args.status,
+    args.subject,
+    args.view,
+    args.from,
+    args.unsubscribeLinkOrEmail,
+  ]);
+}
+
+/**
+ * Called by the "Create labels" menu item.
+ * Creates the Gmail labels used by this script.
+ */
+function createAllLabels() {
+  getOrCreateLabel(Config.instance.unsubscribeLabel);
+  getOrCreateLabel(Config.instance.successLabel);
+  getOrCreateLabel(Config.instance.failLabel);
+}
+
+function trimDetail(detail: string) {
+  if (detail.length > 40) {
+    return String(detail).slice(0, 40) + "…";
+  } else {
+    return detail;
+  }
+}
+
+function getOrCreateLabel(name: string) {
+  var label = GmailApp.getUserLabelByName(name);
+
+  if (!label) {
+    label = GmailApp.createLabel(name);
+  }
+
+  return label;
 }
 
 // ============================================================================
@@ -491,6 +617,10 @@ function stopAllTriggers(silent: boolean) {
 // ============================================================================
 
 let isOnOpen = false;
+/**
+ * This function runs automatically when you open the connected spreadsheet.
+ * More info: https://developers.google.com/apps-script/guides/triggers#onopene
+ */
 function onOpen() {
   try {
     isOnOpen = true;
