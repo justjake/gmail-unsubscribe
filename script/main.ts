@@ -23,6 +23,12 @@ function getOrCreateLabel(name: string) {
   return label;
 }
 
+function createAllLabels() {
+  getOrCreateLabel(Config.instance.unsubscribeLabel);
+  getOrCreateLabel(Config.instance.successLabel);
+  getOrCreateLabel(Config.instance.failLabel);
+}
+
 function logToSpreadsheet(args: {
   status: string;
   subject: string;
@@ -179,7 +185,7 @@ function renderMenu() {
     { name: "Run Once", functionName: "unsubscribeFromLabeledThreads" },
     isRunning()
       ? {
-          name: `Stop (running every ${CRON_MINUTES} minutes)`,
+          name: `Pause (running every ${CRON_MINUTES} minutes)`,
           functionName: "stopAllTriggers",
         }
       : {
@@ -189,17 +195,18 @@ function renderMenu() {
     null,
     { name: "Settings...", functionName: "showConfigView" },
     {
-      name: `  Unsubscribe threads labeled "${Config.instance.unsubscribeLabel}"`,
+      name: `- Unsubscribe threads labeled "${Config.instance.unsubscribeLabel}"`,
       functionName: "showConfigView",
     },
     {
-      name: `  On success, label "${Config.instance.successLabel}"`,
+      name: `- On success, label "${Config.instance.successLabel}"`,
       functionName: "showConfigView",
     },
     {
-      name: `  On fail, label "${Config.instance.failLabel}"`,
+      name: `- On fail, label "${Config.instance.failLabel}"`,
       functionName: "showConfigView",
     },
+    { name: "Create labels", functionName: "createAllLabels" },
   ];
 }
 
