@@ -2,7 +2,10 @@
 
 This Google Apps Script + Google Spreadsheet combo unsubscribes you from all the messages with a specific label (default "Unsubscribe").  Unlike services such as Unroll.me that [sell your data](https://www.theverge.com/2019/12/17/21027159/unroll-me-email-privacy-ftc-settlement) but [don't actually work](https://www.nytimes.com/wirecutter/reviews/best-email-unsubscribe-service/), this script is **completely private**: all data stays in your Google account, and you can verify the script's behavior by reading its source before giving it access to your account.
 
+[Get it here](https://docs.google.com/spreadsheets/d/10sQyFyQ_EsyZ_MWs1UtSBzPkBM9SuDlaFrTNhWoo07w/copy)!
+
 ![Screenshot of the menu](./menu.png)
+
 
 ## Usage
 
