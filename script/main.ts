@@ -317,6 +317,7 @@ function renderMenu() {
           name: `Start running every ${CRON_MINUTES} minutes`,
           functionName: "startCronTrigger",
         },
+    { name: "Create labels", functionName: "createAllLabels" },
     null,
     { name: "Settings...", functionName: "showConfigView" },
     {
@@ -331,12 +332,10 @@ function renderMenu() {
       name: `- On fail, label "${Config.instance.failLabel}"`,
       functionName: "showConfigView",
     },
-    { name: "Create labels", functionName: "createAllLabels" },
   ];
 }
 
 function showMenu() {
-  console.log("isOnOpen", isOnOpen);
   SpreadsheetApp.getActiveSpreadsheet().addMenu(MENU_NAME, renderMenu());
 }
 
@@ -442,7 +441,6 @@ function showConfigView() {
 const CRON_MINUTES = 15;
 
 function isRunning() {
-  console.log("isRunning: isOnOpen", isOnOpen);
   if (isOnOpen) {
     // Can't access triggers during onOpen.
     return Config.instance.runInBackground;
@@ -480,13 +478,14 @@ function stopAllTriggers(silent: boolean) {
 
   if (!silent) {
     Browser.msgBox(
-      "The Gmail Unsubscriber has been disabled. You can restart it anytime later."
+      "The Gmail Unsubscriber has been disabled. You can restart it from the menu."
     );
   }
 
   Config.instance.runInBackground = false;
   updateMenu();
 }
+
 // ============================================================================
 // Event Handlers
 // ============================================================================
@@ -495,7 +494,6 @@ let isOnOpen = false;
 function onOpen() {
   try {
     isOnOpen = true;
-    console.log("isOnOpen", isOnOpen);
     showMenu();
   } finally {
     isOnOpen = false;

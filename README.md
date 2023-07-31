@@ -2,11 +2,13 @@
 
 This Google Apps Script + Google Spreadsheet combo unsubscribes you from all the messages with a specific label (default "Unsubscribe").  Unlike services such as Unroll.me that [sell your data](https://www.theverge.com/2019/12/17/21027159/unroll-me-email-privacy-ftc-settlement) but [don't actually work](https://www.nytimes.com/wirecutter/reviews/best-email-unsubscribe-service/), this script is **completely private**: all data stays in your Google account, and you can verify the script's behavior by reading its source before giving it access to your account.
 
+![Screenshot of the menu](./menu.png)
+
 ## Usage
 
 ### Run for the first time
 
-1. [Copy the Gmail Unsubsriber to your Google Drive](#TODO). This copy, including the code, is completely private to you and can't be accessed or updated by anyone else.
+1. [Copy the Gmail Unsubscriber to your Google Drive](https://docs.google.com/spreadsheets/d/10sQyFyQ_EsyZ_MWs1UtSBzPkBM9SuDlaFrTNhWoo07w/copy). This copy, including the code, is completely private to you and can't be accessed or updated by anyone else.
 1. (Optional) Review the code by choosing "Extensions > Apps Script" in the menu bar.
 1. Note the "Gmail Unsubscriber" menu above the spreadsheet.
 1. (Optional) To change the labels the script uses, chose "Gmail Unsubscriber > Settings..."
@@ -25,6 +27,11 @@ You can use Gmail filters to automatically add the "Unsubscribe" label to certai
 ### Troubleshooting
 
 If we can't figure out how to unsubscribe from a thread or an error occurs, we'll add a note to the spreadsheet, and re-label the email "Unsubscribe Failed". You can click on the thread's subject to open it in Gmail and unsubscribe manually.
+
+### Remove
+
+- Temporarily disable: choose "Gmail Unsubscriber > Stop running" to stop the script from running automatically.
+- Permanently remove: delete the sheet from your Drive.
 
 ## How it works
 

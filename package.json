@@ -16,7 +16,7 @@
     "clasp-personal": "clasp --project ./personal",
     "clasp-prod": "clasp --project ./prod",
     "dev": "yarn clasp-personal push --watch",
-    "publish": "yarn tsc && yarn clasp-prod push",
+    "deploy": "yarn tsc && yarn clasp-prod push",
     "prettier": "prettier --write .",
     "tsc": "tsc --noEmit"
   },
