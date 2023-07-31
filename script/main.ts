@@ -187,18 +187,18 @@ function renderMenu() {
           functionName: "startCronTrigger",
         },
     null,
-    { name: "Change labels...", functionName: "showConfigView" },
+    { name: "Settings...", functionName: "showConfigView" },
     {
-      name: `  Unsubscribe labeled "${Config.instance.unsubscribeLabel}"`,
-      functionName: "noOp",
+      name: `  Unsubscribe threads labeled "${Config.instance.unsubscribeLabel}"`,
+      functionName: "showConfigView",
     },
     {
       name: `  On success, label "${Config.instance.successLabel}"`,
-      functionName: "noOp",
+      functionName: "showConfigView",
     },
     {
       name: `  On fail, label "${Config.instance.failLabel}"`,
-      functionName: "noOp",
+      functionName: "showConfigView",
     },
   ];
 }
@@ -255,19 +255,28 @@ class Config {
   }
 }
 
-function getConfig(): Readonly<Config> {
+type SerializedConfig = Readonly<Config & { runInBackground: boolean }>;
+
+function getConfig(): SerializedConfig {
   return {
     unsubscribeLabel: Config.instance.unsubscribeLabel,
     successLabel: Config.instance.successLabel,
     failLabel: Config.instance.failLabel,
+    runInBackground: isRunning(),
   };
 }
 
-function saveConfig(config: Readonly<Config>) {
+function saveConfig(config: SerializedConfig) {
   try {
     Config.instance.unsubscribeLabel = config.unsubscribeLabel;
     Config.instance.successLabel = config.successLabel;
     Config.instance.failLabel = config.failLabel;
+    if (config.runInBackground) {
+      startCronTrigger();
+    } else {
+      stopAllTriggers(false);
+    }
+    return `Updated config: ${JSON.stringify(getConfig(), null, 2)}`;
   } catch (e) {
     return "ERROR: " + e;
   }
@@ -275,9 +284,9 @@ function saveConfig(config: Readonly<Config>) {
 
 function showConfigView() {
   var html = HtmlService.createHtmlOutputFromFile("config")
-    .setTitle("Gmail Unsubscriber")
+    .setTitle("Gmail Unsubscriber Settings")
     .setWidth(300)
-    .setHeight(500)
+    .setHeight(315)
     .setSandboxMode(HtmlService.SandboxMode.IFRAME);
   var ss = SpreadsheetApp.getActive();
   ss.show(html);
@@ -301,8 +310,10 @@ function startCronTrigger() {
     .create();
 
   Browser.msgBox(
-    "The Gmail Unsubscriber is now running in the background. You can stop it anytime later."
+    `Gmail Unsubscriber will run every ${CRON_MINUTES} minutes even if this spreadsheet is closed. You can stop it from the menu.`
   );
+
+  updateMenu();
 }
 
 function stopAllTriggers(silent: boolean) {
@@ -317,11 +328,17 @@ function stopAllTriggers(silent: boolean) {
       "The Gmail Unsubscriber has been disabled. You can restart it anytime later."
     );
   }
+
+  updateMenu();
 }
 // ============================================================================
 // Event Handlers
 // ============================================================================
 
 function onOpen() {
+  showMenu();
+}
+
+function onInstall() {
   showMenu();
 }

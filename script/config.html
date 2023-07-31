@@ -3,47 +3,7 @@
   href="https://ssl.gstatic.com/docs/script/css/add-ons.css"
 />
 
-<script>
-  function closeWindow() {
-    google.script.host.close();
-  }
-
-  function showMessage(error) {
-    document.getElementById("error").innerHTML = error;
-  }
-
-  function showConfig(config) {
-    document.getElementById("unsubscribeLabel").value = config.unsubscribeLabel;
-    document.getElementById("successLabel").value = config.successLabel;
-    document.getElementById("failLabel").value = config.failLabel;
-  }
-
-  function getConfigFromForm() {
-    return {
-      unsubscribeLabel: document.getElementById("unsubscribeLabel").value,
-      successLabel: document.getElementById("successLabel").value,
-      failLabel: document.getElementById("failLabel").value,
-    };
-  }
-
-  function submit() {
-    const newConfig = getConfigFromForm();
-
-    if (
-      !newConfig.unsubscribeLabel ||
-      !newConfig.successLabel ||
-      !newConfig.failLabel
-    ) {
-      showMessage("Please fill in all fields.");
-      return false;
-    }
-
-    showMessage("Saving configuration, please wait..");
-    google.script.run.withSuccessHandler(showMessage).saveConfig(params);
-  }
-</script>
-
-<form onsubmit="submit()">
+<form>
   <div class="form-group block">
     <label for="unsubscribeLabel" style="margin-bottom: 4px"
       >Unsubscribe Gmail Label Name:</label
@@ -78,9 +38,16 @@
       type="text"
       id="failLabel"
       name="failLabel"
-      placeholder="Unsubscribe Fail"
+      placeholder="Unsubscribe Failed"
       style="width: 250px"
     />
+  </div>
+
+  <div class="form-group block">
+    <label>
+      <input type="checkbox" id="runInBackground" name="runInBackground" />
+      Run periodically in background
+    </label>
   </div>
 
   <p>
@@ -93,9 +60,59 @@
     />
   </p>
 
-  <p class="error" id="error"></p>
+  <p class="error" id="error" style="white-space: pre-wrap"></p>
 </form>
 
 <script>
+  function closeWindow() {
+    google.script.host.close();
+  }
+
+  function showMessage(error) {
+    document.getElementById("error").innerHTML = error;
+  }
+
+  function showConfig(config) {
+    document.getElementById("unsubscribeLabel").value = config.unsubscribeLabel;
+    document.getElementById("successLabel").value = config.successLabel;
+    document.getElementById("failLabel").value = config.failLabel;
+    document.getElementById("runInBackground").checked = config.runInBackground;
+  }
+
+  function getConfigFromForm() {
+    return {
+      unsubscribeLabel: document.getElementById("unsubscribeLabel").value,
+      successLabel: document.getElementById("successLabel").value,
+      failLabel: document.getElementById("failLabel").value,
+      runInBackground: Boolean(
+        document.getElementById("runInBackground").checked
+      ),
+    };
+  }
+
+  function submit(e) {
+    e.preventDefault();
+
+    try {
+      const newConfig = getConfigFromForm();
+
+      if (
+        !newConfig.unsubscribeLabel ||
+        !newConfig.successLabel ||
+        !newConfig.failLabel
+      ) {
+        showMessage("Please fill in all fields.");
+        return false;
+      }
+
+      showMessage("Saving configuration...");
+      google.script.run.withSuccessHandler(showMessage).saveConfig(newConfig);
+    } catch (error) {
+      showMessage(error);
+    }
+  }
+
+  document.querySelector("form").addEventListener("submit", submit);
+
   google.script.run.withSuccessHandler(showConfig).getConfig();
 </script>

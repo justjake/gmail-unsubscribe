@@ -6,11 +6,16 @@
   "repository": "https://github.com/justjake/gmail-unsubscribe",
   "author": "Jake Teton-Landis <just.1.jake@gmail.com>",
   "license": "MIT",
-  "private": false,
+  "private": true,
   "devDependencies": {
     "@google/clasp": "^2.4.2",
     "@types/google-apps-script": "^1.0.65",
     "prettier": "^3.0.0"
+  },
+  "scripts": {
+    "push": "yarn tsc && clasp push",
+    "prettier": "prettier --write .",
+    "tsc": "tsc --noEmit"
   },
   "dependencies": {}
 }
