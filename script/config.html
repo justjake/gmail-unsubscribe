@@ -8,52 +8,83 @@
     google.script.host.close();
   }
 
-  function showError(error) {
+  function showMessage(error) {
     document.getElementById("error").innerHTML = error;
   }
 
-  function showConfig(params) {
-    if (params.label !== "")
-      document.getElementById("label").value = params.label;
-
-    return;
+  function showConfig(config) {
+    document.getElementById("unsubscribeLabel").value = config.unsubscribeLabel;
+    document.getElementById("successLabel").value = config.successLabel;
+    document.getElementById("failLabel").value = config.failLabel;
   }
 
-  function validate() {
-    var label = document.getElementById("label").value;
+  function getConfigFromForm() {
+    return {
+      unsubscribeLabel: document.getElementById("unsubscribeLabel").value,
+      successLabel: document.getElementById("successLabel").value,
+      failLabel: document.getElementById("failLabel").value,
+    };
+  }
 
-    if (label.trim() === "") {
-      showError("Please enter a Gmail label name..");
-      return;
-    } else {
-      showError("Saving configuration, please wait..");
-      var params = {
-        label: label,
-      };
-      google.script.run.withSuccessHandler(showError).saveConfig(params);
+  function submit() {
+    const newConfig = getConfigFromForm();
+
+    if (
+      !newConfig.unsubscribeLabel ||
+      !newConfig.successLabel ||
+      !newConfig.failLabel
+    ) {
+      showMessage("Please fill in all fields.");
+      return false;
     }
+
+    showMessage("Saving configuration, please wait..");
+    google.script.run.withSuccessHandler(showMessage).saveConfig(params);
   }
 </script>
 
-<form>
+<form onsubmit="submit()">
   <div class="form-group block">
-    <p style="margin-bottom: 4px">Enter Gmail Label Name:</p>
+    <label for="unsubscribeLabel" style="margin-bottom: 4px"
+      >Unsubscribe Gmail Label Name:</label
+    >
     <input
       type="text"
-      id="label"
-      name="label"
-      placeholder="Your email address.."
+      id="unsubscribeLabel"
+      name="unsubscribeLabel"
+      placeholder="Unsubscribe"
+      style="width: 250px"
+    />
+  </div>
+
+  <div class="form-group block">
+    <label for="successLabel" style="margin-bottom: 4px">
+      Apply label once successfully unsubscribed:
+    </label>
+    <input
+      type="text"
+      id="successLabel"
+      name="successLabel"
+      placeholder="Unsubscribe Success"
+      style="width: 250px"
+    />
+  </div>
+
+  <div class="form-group block">
+    <label for="failLabel" style="margin-bottom: 4px"
+      >Apply label if unsuccessful:</label
+    >
+    <input
+      type="text"
+      id="failLabel"
+      name="failLabel"
+      placeholder="Unsubscribe Fail"
       style="width: 250px"
     />
   </div>
 
   <p>
-    <input
-      class="blue"
-      type="button"
-      value="Save configuration"
-      onclick="validate()"
-    />
+    <input class="blue" type="submit" value="Save configuration" />
     <input
       class="green"
       type="button"
