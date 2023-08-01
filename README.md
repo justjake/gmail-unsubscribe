@@ -45,6 +45,8 @@ Google Apps Script provides an API that lets us connect to your Gmail account fr
 
 Then, we record the status of the thread in the spreadsheet, and change the label of the thread from "Unsubscribe" to "Unsubscribe Success" or "Unsubscribe Failed" (configurable).
 
+The [source code](./script/main.ts) has comments written for beginner programmers if you want to learn more.
+
 ## Developer info
 
 The software is made of two parts - a Google Sheet for the UI, and the Apps Script source that powers the actions. This repo only contains the Apps Script source, and needs to connect to a Google Sheet to work. We use [google/clasp](https://github.com/google/clasp) to manage the Apps Script source.
