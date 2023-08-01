@@ -1,8 +1,9 @@
 /*
  * Gmail Unsubscribe
- *
  * By Jake Teton-Landis (@jitl)
- * Forked from Amit Agarwal (@labnol): https://www.labnol.org/internet/gmail-unsubscribe/28806/
+ *
+ * Even if you're not a programmer, I hope the comments I've written are enough
+ * to help you through everything that's going on.
  *
  * The important functions in this file are:
  *
@@ -12,6 +13,19 @@
  * - onOpen: this function is called automatically when you open the Sheet.
  *   It just adds the menu to your sheet's UI.
  *   It's restricted from accessing your data by Google Apps Script itself.
+ *
+ * The best reference for automatic unsubscribing I've found is Google's
+ * guide for mailers to set up one-click unsubscribe:
+ * https://support.google.com/mail/answer/81126?hl=en#:~:text=Advanced%3A%20Set%20up%20one%2Dclick%20unsubscribe
+ *
+ * The relevant RFCs:
+ * https://tools.ietf.org/html/rfc2369
+ * https://tools.ietf.org/html/rfc8058
+ *
+ * @todo
+ * I've seen Gmail offer to one-click unsubscribe from an email with only the
+ * `list-unsubscribe-post` header and no `list-unsubscribe` header,
+ * but I don't know where to send the POST request :(
  */
 
 /**
@@ -84,10 +98,12 @@ function unsubscribeThread(args: {
   let message: GoogleAppsScript.Gmail.GmailMessage | undefined = undefined;
 
   try {
+    message = thread.getMessages()[0];
+
     /**
      * Parse the actions from the first message in the thread.
+     * See the `getUnsubscribeActions` function for more details.
      */
-    message = thread.getMessages()[0];
     const actions = getUnsubscribeActions(message);
     console.log("Parsed thread", { thread: thread.getPermalink(), actions });
 
@@ -264,6 +280,14 @@ function getUnsubscribeActions(
    * This regex grabs the contents of the header.
    */
   const listUnsubscribeHeader = raw.match(
+    /**
+     * This intimidating looking syntax is called a "regular expression"
+     * (commonly shortened to "regex"). It's used for finding occurences of
+     * specific patterns in a larger text.
+     *
+     * Try pasting into an online tool that will explain it letter by letter:
+     * https://regexr.com/
+     */
     /^list-unsubscribe:(?:[\r\n\s])+([^\n\r]+)$/im
   )?.[1];
   /**
@@ -373,10 +397,12 @@ function getUnsubscribeActions(
 function getActionPriority(action: UnsubscribeAction): number {
   switch (action.type) {
     // This action is specified by the email sender as a way to
-    // We rank HTTP post action highest, because it's the most efficient overall.
+    // We rank HTTP post action highest, because it's the most efficient overall
+    // if we can one-click unsubscribe via post.
     case "http":
-      return 3;
-    // Sending an unsubscribe email
+      return action.postBody ? 3 : 1.5;
+    // Sending an unsubscribe email is better than HTTP request if the
+    // sender didn't indicate a one-click unsubscribe POST body.
     case "mailto":
       return 2;
     case "tryOpenLink":
