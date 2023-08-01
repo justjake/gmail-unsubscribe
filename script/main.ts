@@ -306,7 +306,9 @@ function getUnsubscribeActions(
    * "<https://example.com/unsubscribe>, <mailto:unsubscribe@example.com?subject=XXXX>"
    * ```
    * output:
+   * ```
    * ["https://example.com/unsubscribe", "mailto:unsubscribe@example.com?subject=XXXX"]
+   * ```
    */
   const listUnsubscribeOptionsMatches = listUnsubscribeHeader
     ? Array.from(listUnsubscribeHeader.matchAll(/<([^>]+)>/gi))
