@@ -6,13 +6,11 @@ This Google Apps Script + Google Spreadsheet combo unsubscribes you from all the
 
 ![Screenshot of the menu](./menu.png)
 
-
 ## Usage
 
 ### Run for the first time
 
-1. [Copy the Gmail Unsubscriber to your Google Drive](https://docs.google.com/spreadsheets/d/10sQyFyQ_EsyZ_MWs1UtSBzPkBM9SuDlaFrTNhWoo07w/copy). This copy, including the code, is completely private to you and can't be accessed or updated by anyone else.
-1. (Optional) Review the code by choosing "Extensions > Apps Script" in the menu bar.
+1. [Copy the Gmail Unsubscriber to your Google Drive](https://docs.google.com/spreadsheets/d/10sQyFyQ_EsyZ_MWs1UtSBzPkBM9SuDlaFrTNhWoo07w/copy). You'll be able to review the code before creating the copy. This copy, including the code, is completely private to you and can't be accessed or updated by anyone else.
 1. Note the "Gmail Unsubscriber" menu above the spreadsheet.
 1. (Optional) To change the labels the script uses, chose "Gmail Unsubscriber > Settings..."
 1. Choose "Gmail Unsubscriber > Create labels". This will create the labels in your Gmail account. Allow the script to access to your Gmail account when prompted.
@@ -62,6 +60,16 @@ You can add `--watch` to the push command to push whenever you edit a file.
 
 ## Credits
 
-The original 2017 version of gmail-unsubscribe was written by Amit Agarwal. Read the original article here: [How to Unsubscribe from Mailing Lists and Junk Newsletters in Gmail](https://www.labnol.org/internet/gmail-unsubscribe/28806/)
+The original 2017 version of gmail-unsubscribe was written by Amit Agarwal. Read the original article here: [How to Unsubscribe from Mailing Lists and Junk Newsletters in Gmail](https://www.labnol.org/internet/gmail-unsubscribe/28806/).
 
-[Jake Teton-Landis](https://jake.tl) rewrote the script in Typescript, added features, and corrected issues that made the original ineffective.
+[Jake Teton-Landis](https://jake.tl) rewrote the script to added features and corrected issues that made the original ineffective:
+
+- Added a "Run Now" button to take action immediately, and reworked menus to show script status and settings.
+- Added "Success" and "Fail" tags for triage within Gmail.
+- Fixed logic mistakes that caused the old version to crash on my emails.
+- Improved error handling. The old version aborted on the first error in any thread with no indication to the user. Combined with the 15 minute schedule, it would take 12 hours to process 100 emails with a failure rate of 50%. Our version will log the error to the spreadsheet and continue to the next thread, cutting the time to ~minutes.
+- The old version assumed that a GET request to a link in the body is sufficient to unsubscribe. We still try by sending a GET request, but these are marked "maybe" in the spreadsheet and moved to the "Fail" label so the user can triage.
+- Improved RFC-compliant handling of the `list-unsubscribe` header:
+  - For `http(s):` we now including include `list-unsubscribe-post` body in the request, which is required for one-click unsubscribe, per [RFC8058 Section 3.2](https://datatracker.ietf.org/doc/html/rfc8058#section-3.2).
+  - For `mailto:` URLs we now respect the `subject` and `body` parameters, which may be needed to identify the user when unsubscribing, as suggested by examples in [RFC2369](https://datatracker.ietf.org/doc/html/rfc2369#section-3.2).
+- Written in Typescript, committed to git, pushed to Github, and managed with `clasp`.
