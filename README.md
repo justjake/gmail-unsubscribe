@@ -11,7 +11,6 @@ This Google Apps Script + Google Spreadsheet combo unsubscribes you from all the
 ### Run for the first time
 
 1. [Copy the Gmail Unsubscriber to your Google Drive](https://docs.google.com/spreadsheets/d/10sQyFyQ_EsyZ_MWs1UtSBzPkBM9SuDlaFrTNhWoo07w/copy). You'll be able to review the code before creating the copy. This copy, including the code, is completely private to you and can't be accessed or updated by anyone else.
-1. Note the "Gmail Unsubscriber" menu above the spreadsheet.
 1. (Optional) To change the labels the script uses, chose "Gmail Unsubscriber > Settings..."
 1. Choose "Gmail Unsubscriber > Create labels". This will create the labels in your Gmail account. Allow the script to access to your Gmail account when prompted.
 1. Open your Gmail inbox, and add the "Unsubscribe" label to some unwanted emails. You can click and drag emails onto the label.
